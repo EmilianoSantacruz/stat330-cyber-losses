@@ -7,7 +7,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Fernanda Lopez, Emiliano Santacruz, and Aidee Mendez">
-<meta name="description" content="Our proposed extension and two planned verification checks.">
 
 <title>AI Use and Verification – STAT 330 Portfolio</title>
 <style>
@@ -2630,12 +2629,10 @@ font-size: 0.88rem;
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#starting-point" id="toc-starting-point" class="nav-link active" data-scroll-target="#starting-point">Starting point</a></li>
-  <li><a href="#substantive-extension-selection-prompt" id="toc-substantive-extension-selection-prompt" class="nav-link" data-scroll-target="#substantive-extension-selection-prompt">Substantive extension-selection prompt</a></li>
-  <li><a href="#options-and-our-decision" id="toc-options-and-our-decision" class="nav-link" data-scroll-target="#options-and-our-decision">Options and our decision</a></li>
-  <li><a href="#implementation-and-connection-to-the-case-study" id="toc-implementation-and-connection-to-the-case-study" class="nav-link" data-scroll-target="#implementation-and-connection-to-the-case-study">Implementation and connection to the case study</a></li>
-  <li><a href="#two-planned-independent-verification-checks" id="toc-two-planned-independent-verification-checks" class="nav-link" data-scroll-target="#two-planned-independent-verification-checks">Two planned independent verification checks</a></li>
-  <li><a href="#remaining-limitation" id="toc-remaining-limitation" class="nav-link" data-scroll-target="#remaining-limitation">Remaining limitation</a></li>
+  <li><a href="#customized-prompt" id="toc-customized-prompt" class="nav-link active" data-scroll-target="#customized-prompt">Customized prompt</a></li>
+  <li><a href="#proposed-extension" id="toc-proposed-extension" class="nav-link" data-scroll-target="#proposed-extension">Proposed extension</a></li>
+  <li><a href="#two-planned-verification-checks" id="toc-two-planned-verification-checks" class="nav-link" data-scroll-target="#two-planned-verification-checks">Two planned verification checks</a></li>
+  <li><a href="#decisions-and-limitation" id="toc-decisions-and-limitation" class="nav-link" data-scroll-target="#decisions-and-limitation">Decisions and limitation</a></li>
   <li><a href="#other-ai-use" id="toc-other-ai-use" class="nav-link" data-scroll-target="#other-ai-use">Other AI use</a></li>
   </ul>
 </nav>
@@ -2648,11 +2645,6 @@ font-size: 0.88rem;
 <h1 class="title">AI Use and Verification</h1>
 </div>
 
-<div>
-  <div class="description">
-    Our proposed extension and two planned verification checks.
-  </div>
-</div>
 
 
 <div class="quarto-title-meta">
@@ -2673,55 +2665,31 @@ font-size: 0.88rem;
 </header>
 
 
-<section id="starting-point" class="level2">
-<h2 class="anchored" data-anchor-id="starting-point">Starting point</h2>
 <p><strong>AI system and date:</strong> OpenAI ChatGPT/Codex, November 10, 2026.</p>
-<p><strong>Status:</strong> This is a preliminary plan for the publishing checkpoint. The interactive extension is not implemented yet. The two independent checks below are planned, not completed.</p>
-<p>Our question is: To what extent do incident type, institution size, and event year help predict reported economic losses from cyber incidents at financial institutions?</p>
-<p>We use 26 VCDB incidents with positive reported losses in USD. Our baseline is <code>lm(log_loss ~ type + size + year_c)</code>, where <code>log_loss</code> is natural log loss and <code>year_c</code> is year minus 2013. It has an R-squared of 0.260. The estimated size ratio is 12.0, but its 95% confidence interval is 0.28 to 521.5. Only five records involve smaller institutions, and none of those have misuse or social incidents. We need a clear way to show this uncertainty and avoid unsupported comparisons.</p>
-</section>
-<section id="substantive-extension-selection-prompt" class="level2">
-<h2 class="anchored" data-anchor-id="substantive-extension-selection-prompt">Substantive extension-selection prompt</h2>
-<p>The following customized prompt defines the extension-selection task used in preparing this plan:</p>
+<section id="customized-prompt" class="level2">
+<h2 class="anchored" data-anchor-id="customized-prompt">Customized prompt</h2>
 <blockquote class="blockquote">
 <p>I am creating a regression case study in R and Quarto. My question is: To what extent do incident type, institution size, and event year help predict reported economic losses from cyber incidents at financial institutions? The response is natural log of positive reported monetary loss in nominal USD. Predictors are incident type (physical or error, misuse or social, hacking or malware), institution size (up to 1,000 or over 1,000 employees), and incident year centered at 2013. The course-based core model is lm(log_loss ~ type + size + year_c). We have 26 incidents from 2002 to 2016. The baseline R-squared is 0.260. The estimated geometric mean loss ratio for larger versus smaller institutions is 12.0, with a 95% confidence interval from 0.28 to 521.5. Only five records involve smaller institutions, and none of those have misuse or social incidents. Suggest three feasible beyond-course extensions that strengthen this same regression question. For each, explain how it helps, how its result would enter the case study, the implementation steps, and two independent checks. Keep repeated cross-validation and influence sensitivity as the two separate course-method elements. Do not choose for me.</p>
 </blockquote>
 </section>
-<section id="options-and-our-decision" class="level2">
-<h2 class="anchored" data-anchor-id="options-and-our-decision">Options and our decision</h2>
-<ul>
-<li><strong>Interactive regression display:</strong> Let readers choose predictors and see the predicted log loss and its uncertainty. Fit the model in R, make a small prediction grid, and add controls to the case-study page. Check the displayed values against R output and a manual calculation. This directly addresses our communication need.</li>
-<li><strong>Tree-based comparator:</strong> Fit a small random forest and compare log-loss RMSE with the regression using the same grouped folds. Check fold membership and compare its predictions with a simple reference model. With only 26 records, this may be unstable.</li>
-<li><strong>Model explanation display:</strong> Show how each regression term changes a selected prediction. Build it from the coefficient values. Check that the contributions sum to the prediction and compare factor coding with R’s model matrix. This may be less useful than directly showing uncertainty.</li>
-</ul>
-<p><strong>Selected extension:</strong> An interactive display of the baseline regression predictions and uncertainty. This adds a communication feature beyond the static regression output. It will support the course model, not replace either required course-method element.</p>
-<p><strong>Accepted:</strong> Use the interactive display to show how predictions and uncertainty change across observed predictor values.</p>
-<p><strong>Changed:</strong> Use predicted natural log loss as the main scale. If we also exponentiate it, label that value as the predicted geometric mean loss, not the arithmetic mean dollar loss. A confidence interval for the mean log response is not a prediction interval for an individual incident.</p>
-<p><strong>Not selected:</strong> The random forest comparator, because the sample is small. We also did not select the term-contribution display because the prediction display better addresses our main communication need.</p>
+<section id="proposed-extension" class="level2">
+<h2 class="anchored" data-anchor-id="proposed-extension">Proposed extension</h2>
+<p>We selected an interactive display of the regression predictions and their 95% confidence intervals. Readers will choose incident type, institution size, and a year from 2002 to 2016. The display will show how predictions and uncertainty change and flag groups with no observations. We will include it in the case-study page with a short explanation of what it adds to our research question.</p>
 </section>
-<section id="implementation-and-connection-to-the-case-study" class="level2">
-<h2 class="anchored" data-anchor-id="implementation-and-connection-to-the-case-study">Implementation and connection to the case study</h2>
+<section id="two-planned-verification-checks" class="level2">
+<h2 class="anchored" data-anchor-id="two-planned-verification-checks">Two planned verification checks</h2>
 <ol type="1">
-<li>Keep the same cleaned data, factor levels, and regression formula.</li>
-<li>Create a prediction grid in R for the three incident types, two size groups, and years from 2002 to 2016. Use <code>predict(baseline, newdata, interval = &quot;confidence&quot;, level = 0.95)</code>.</li>
-<li>Add a small interactive HTML/JavaScript display to the case-study page. Show the fitted log loss, its 95% confidence interval, and the number of records in the selected type-size group. Clearly flag groups with no observations and avoid predictions beyond the observed year range.</li>
-<li>Put the display and a short interpretation in the case study’s “AI-supported extension” section. Explain which comparisons have wide intervals and little data. The feature will help readers judge how much the model can tell us about the same research question.</li>
+<li><strong>Compare with R:</strong> Compare the display’s predictions and interval endpoints with saved results from <code>predict.lm</code> for both size groups and all incident types. Check the controls and warnings. Use the <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/predict.lm.html">official R documentation</a> to confirm the meaning of the confidence intervals.</li>
+<li><strong>Manual calculation:</strong> For one supported example, calculate the prediction from the model coefficients. Calculate the confidence interval using the coefficient covariance matrix and the t critical value with 21 residual degrees of freedom. Compare it with R and the display.</li>
 </ol>
 </section>
-<section id="two-planned-independent-verification-checks" class="level2">
-<h2 class="anchored" data-anchor-id="two-planned-independent-verification-checks">Two planned independent verification checks</h2>
-<ol type="1">
-<li><strong>Compare the display with R:</strong> Save predictions from <code>predict.lm</code> for a fixed set of combinations, including both size groups and every incident type. Compare the displayed fit and both interval endpoints with those saved values to numerical tolerance before rounding. Also test the controls, the year limits, and the warning for a group with no observations. Use the <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/predict.lm.html">official R predict.lm documentation</a> to confirm what the confidence interval represents. <strong>Result: pending.</strong></li>
-<li><strong>Manual calculation:</strong> For a supported example, construct the model row x and calculate the fit as x times the coefficient vector. Calculate its standard error as sqrt(x V x’), using V = vcov(baseline), and the 95% interval with the t critical value and 21 residual degrees of freedom. Compare these results with R and the display. If we show dollar values, check the exponentiation separately. This uses a separate calculation rather than another AI answer. <strong>Result: pending.</strong></li>
-</ol>
-</section>
-<section id="remaining-limitation" class="level2">
-<h2 class="anchored" data-anchor-id="remaining-limitation">Remaining limitation</h2>
-<p>The display cannot fix the small, selected sample or missing loss data. Some institutions appear more than once. The confidence intervals depend on the regression assumptions, and predictions for groups with little data may be unreliable. We will not make causal claims or use this model to recommend a security budget.</p>
+<section id="decisions-and-limitation" class="level2">
+<h2 class="anchored" data-anchor-id="decisions-and-limitation">Decisions and limitation</h2>
+<p>We chose the interactive display because it helps explain the wide uncertainty in our baseline. We did not select a random forest because our sample is small. We will label exponentiated predictions as geometric mean losses. The display cannot fix missing loss data or the small sample.</p>
 </section>
 <section id="other-ai-use" class="level2">
 <h2 class="anchored" data-anchor-id="other-ai-use">Other AI use</h2>
-<p>We used ChatGPT/Codex earlier to help find public data and check data availability. For this checkpoint, Codex also helped transfer the proposal into the website, prepare the preliminary AI plan, render the Quarto files, and publish and test the site. The planned extension and its independent verification are still pending.</p>
+<p>ChatGPT/Codex helped find public data, check data availability, prepare the website and AI plan, and render and publish the site.</p>
 
 
 </section>

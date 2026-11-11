@@ -1,47 +1,25 @@
 ---
 title: "Predicting Reported Cyber Incident Losses in Financial Institutions"
-subtitle: "STAT 330 Publishing and AI Checkpoint"
 author: "Fernanda Lopez, Emiliano Santacruz, and Aidee Mendez"
-format:
-  html:
-    theme: cosmo
-    toc: true
-    code-fold: true
-    code-summary: "Show code"
-    embed-resources: true
-execute:
-  warning: false
-  message: false
 ---
 
-**Group members:** Fernanda Lopez, Emiliano Santacruz, and Aidee Mendez.
-
-> **Project status:** This is our publishing checkpoint. The baseline is preliminary. The two course-method extensions and the AI-supported feature are planned, not finished.
-
-[AI-use plan and verification](ai-use.qmd)
-
-## Question and audience
+## Research question
 
 To what extent do incident type, institution size, and event year help predict reported economic losses from cyber incidents at financial institutions?
 
-Our audience is risk management and cybersecurity teams at financial institutions. We want to understand which incident characteristics help explain differences in reported losses. This is a first step toward our longer-term interest in how banks divide resources between technology protection and financial protection. This project will not estimate an optimal security budget or the effect of buying insurance.
+Our audience is risk management and cybersecurity teams at financial institutions. We want to understand which incident characteristics help explain differences in reported losses.
 
-The response is reported monetary loss per incident. The candidate predictors are incident type, institution size measured by employee-count category, and incident year. We use the database's broad information-security scope, including hacking, malware, information misuse, social engineering, and incidents involving lost devices or disclosure errors. Financial institutions include banks, payment firms, brokers, and insurers.
+## Data source
 
-## Data
+We use the [VERIS Community Database (VCDB)](https://github.com/vz-risk/VCDB/tree/f6f98c00f66ab35f5b49977a5852ce94a5bb31d1). Each row is one incident. The response is reported loss in USD. Predictors are incident type, employee-count category, and incident year.
 
-We use the [VERIS Community Database (VCDB)](https://github.com/vz-risk/VCDB), which contains publicly disclosed security incidents coded by community contributors using the VERIS framework. Our source is a [fixed repository version](https://github.com/vz-risk/VCDB/tree/f6f98c00f66ab35f5b49977a5852ce94a5bb31d1), accessed October 23, 2026. The observational unit is one incident record. The validated-data folder contains 10,047 records, including 893 with finance-and-insurance industry codes beginning with NAICS 52. Of those, 61 have a positive overall loss recorded. We embed those 61 records and 11 relevant source fields below so the QMD can run without a separate data file or an internet connection.
+The code below embeds 61 finance-and-insurance records with positive reported losses. Keeping USD records with known size and year, and excluding a security-budget amount and an unrelated fine, leaves 26 incidents. Public reports are not a random sample, and missing losses are not zero.
 
-Keeping only losses explicitly coded as USD gives 35 records. Requiring a known employee-count category and incident year leaves 28. We exclude two records after reviewing their meaning. The JPMorgan record uses a $250 million annual cybersecurity budget as its loss amount. The Cignet record uses a fine for denying access to medical records and failing to cooperate with an investigation. Neither measures a loss from the incident described in that record. The reasons are supported by [JPMorgan's 2014 annual report](https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/JPMC-AR2014-MDA.pdf) and the [HHS Cignet case description](https://www.hhs.gov/hipaa/for-professionals/compliance-enforcement/examples/cignet-health/index.html). Our final sample has 26 incidents from 2002 to 2016.
-
-The response comes from `impact.overall_amount`, with currency checked using `impact.iso_currency_code`. It includes recorded financial consequences such as theft, settlements, and fines. These amounts do not necessarily measure the full loss or the amount ultimately paid by the institution. We keep nominal USD as coded in VCDB without adjusting for inflation. Size comes from `victim.employee_count`: up to 1,000 employees versus over 1,000, following the [VERIS size definitions](https://verisframework.org/victim-demo.html). Year comes from `timeline.incident.year` and may be the start of an event that lasted several years.
-
-We group incident types before fitting the model. Records with hacking or malware go into "Hacking or malware." Among the remaining records, those with misuse or social engineering go into "Misuse or social." The rest go into "Physical or error." This priority rule puts each record in one group when several actions appear together.
-
-VCDB uses a [CC BY-SA 4.0 license](https://github.com/vz-risk/VCDB/blob/f6f98c00f66ab35f5b49977a5852ce94a5bb31d1/LICENSE.txt), which allows sharing with attribution and the same license for adapted data. The embedded data are shared under that license. We include incident IDs but no customer or employee identifiers. Public reports are not a random sample, and most financial-sector records have no usable loss amount. Some institutions appear repeatedly. Missing data, possible coding errors, different loss definitions, and the small sample limit generalization. We do not treat a missing loss as zero.
+The embedded data are adapted from VCDB under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). No customer or employee identifiers are included. The code contains the data and preparation steps needed to reproduce the baseline.
 
 ```{r}
 #| label: data-check
+#| include: false
 # Source: vz-risk/VCDB, commit f6f98c00f66ab35f5b49977a5852ce94a5bb31d1.
 # All 61 finance-and-insurance records with a positive overall loss.
 # These are source fields, not simulated data. Adapted data: CC BY-SA 4.0.
@@ -150,104 +128,16 @@ knitr::kable(data.frame(
 ), align = c("l", "r"))
 ```
 
-## One useful first look
-
 ```{r}
-#| label: fig-loss-by-type
-#| fig-width: 8
-#| fig-height: 4.8
-#| fig-dpi: 160
-#| fig-cap: "Reported losses for the 26 retained incidents. Each point is one record. The vertical axis uses a logarithmic scale. Boxes show the middle half of each group and lines mark medians."
-#| fig-alt: "Losses range from 300 to 185 million US dollars. Hacking or malware has the highest sample median, but losses vary widely within groups. Five incidents involve institutions with up to 1,000 employees and 21 involve larger institutions."
-
-palette <- c("#0072B2", "#D55E00")
-par(mar = c(5.3, 5.5, 3.3, 1))
-boxplot(loss_amount ~ type, data = analysis, log = "y",
-        outline = FALSE, xaxt = "n", yaxt = "n",
-        col = "#E9ECEF", border = "#636363",
-        ylim = c(150, 4e8), xlab = "", ylab = "",
-        main = "Reported losses vary widely within incident types")
-axis(1, at = 1:3,
-     labels = c("Physical or error\n(n = 12)",
-                "Misuse or social\n(n = 8)",
-                "Hacking or malware\n(n = 6)"),
-     tick = FALSE, cex.axis = 0.9)
-axis(2, at = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8),
-     labels = c("$1K", "$10K", "$100K", "$1M", "$10M", "$100M"),
-     las = 1, cex.axis = 0.85)
-mtext("Reported loss (nominal USD; logarithmic scale)", side = 2,
-      line = 4.1, cex = 0.9)
-mtext("Recorded incident type", side = 1, line = 3.8, cex = 0.9)
-set.seed(330)
-points(jitter(as.numeric(analysis$type), amount = 0.12),
-       analysis$loss_amount,
-       col = palette[as.numeric(analysis$size)],
-       pch = c(16, 17)[as.numeric(analysis$size)], cex = 0.95)
-legend("topleft", legend = levels(analysis$size),
-       col = palette, pch = c(16, 17), bty = "n",
-       title = "Institution size (employees)", cex = 0.78)
-medians <- tapply(analysis$loss_amount, analysis$type, median)
-```
-
-The sample median loss is $`r format(medians["Hacking or malware"], big.mark = ",", scientific = FALSE)` for hacking or malware, compared with $`r format(medians["Physical or error"], big.mark = ",", scientific = FALSE)` for physical incidents or errors. Losses vary widely within each group, and only six records are in the hacking-or-malware group. These are differences in reported records, so the figure does not show that incident type causes a particular loss.
-
-## Baseline model
-
-We start with an additive linear regression of the natural log of reported loss on incident type, size category, and incident year. The log scale is useful because the retained losses range from $300 to $185 million. We center year at 2013 to make the intercept easier to understand. This model gives a simple starting comparison for all three predictors without adding interactions.
-
-```{r}
-#| label: baseline
+#| include: false
 baseline <- lm(log_loss ~ type + size + year_c, data = analysis)
-ci <- confint(baseline, level = 0.95)
-terms <- c("typeMisuse or social", "typeHacking or malware",
-           "sizeOver 1,000", "year_c")
-results <- data.frame(
-  Comparison = c("Misuse/social vs. physical/error",
-                 "Hacking/malware vs. physical/error",
-                 "Over 1,000 vs. up to 1,000 employees",
-                 "One year later"),
-  `Loss ratio` = exp(coef(baseline)[terms]),
-  `95% CI lower` = exp(ci[terms, 1]),
-  `95% CI upper` = exp(ci[terms, 2]),
-  check.names = FALSE, row.names = NULL
-)
-knitr::kable(results, digits = 2, align = c("l", "r", "r", "r"))
-cat(sprintf("\nObservations: %d. Residual degrees of freedom: %d. R-squared: %.3f.\n",
-            nobs(baseline), df.residual(baseline),
-            summary(baseline)$r.squared))
-size_ratio <- exp(coef(baseline)["sizeOver 1,000"])
-size_ci <- exp(ci["sizeOver 1,000", ])
 ```
 
-Holding recorded incident type and year constant, the model estimates a geometric mean reported loss about `r sprintf("%.1f", size_ratio)` times as large for institutions with over 1,000 employees as for smaller institutions. The model-based 95% confidence interval for this ratio is `r sprintf("%.2f", size_ci[1])` to `r sprintf("%.1f", size_ci[2])`. The point estimate is positive, but the interval includes 1 and is very wide, so this sample does not give a clear estimate of the size difference. This is a ratio of geometric means, not a dollar difference or a ratio of arithmetic mean losses.
+## Baseline
 
-A specific limitation is that only five incidents involve smaller institutions, and none of those five are in the misuse-or-social group. The adjusted comparisons therefore have limited overlap. The model explains about `r sprintf("%.0f", 100 * summary(baseline)$r.squared)`% of variation in log loss within this sample, but that does not measure performance on new incidents. The confidence intervals also assume independent errors, which may be questionable when institutions appear repeatedly.
+Our baseline predicts natural log loss from incident type, institution size, and year. Its R-squared is 0.260. The estimated loss ratio for larger versus smaller institutions is 12.0, with a 95% confidence interval of 0.28 to 521.5. Only five incidents involve smaller institutions, so the comparison is uncertain.
 
-## Where the analysis could go
+## Project links
 
-1. Validation and comparison: We plan to compare the additive model with an intercept-only model using repeated five-fold cross-validation. Both models will use the same folds, and we will compare root mean squared prediction error on the log-loss scale. Records from the same institution should stay in the same fold after we check and standardize organization names from the source. This will help us assess whether the predictors improve prediction beyond a constant log-loss estimate.
-
-2. Diagnostics and robustness: We plan an influence sensitivity analysis. We will use Cook's distance to identify influential records, check their source descriptions, and refit the model with and without those records. We will compare the size and incident-type ratios and their intervals. Valid large losses will remain in the main analysis; the alternative fits will show how much the conclusions depend on individual records. This goes beyond showing routine diagnostic plots.
-
-For the later AI-supported extension, one possible direction is an interactive display of model predictions and uncertainty. We would choose the extension after the course-based analysis and avoid predictions for combinations with little data. The extension would support the regression results and would need two independent verification checks.
-
-## AI-supported extension plan
-
-We plan an interactive display of the baseline model's predicted log loss and 95% confidence interval. Readers will choose incident type, size, and a year within the observed range. Unsupported combinations will be flagged. We will show its main result on this page and check it against R predictions and a manual calculation. See the [AI-use record](ai-use.qmd).
-
-## Data and code
-
-[Project repository](https://github.com/EmilianoSantacruz/stat330-cyber-losses). The input data and all filtering steps are embedded in this page's source. Render with R, knitr, rmarkdown, and Quarto.
-
-## AI disclosure and sources
-
-We used OpenAI ChatGPT/Codex for help finding a public dataset, checking data availability, preparing this checkpoint website, and planning the AI-supported extension. The extension and its independent checks are still pending.
-
-Verizon RISK Team and VERIS community contributors. *VERIS Community Database*. Repository version `f6f98c00f66ab35f5b49977a5852ce94a5bb31d1`. [Data and documentation](https://github.com/vz-risk/VCDB/tree/f6f98c00f66ab35f5b49977a5852ce94a5bb31d1). Accessed October 23, 2026. The embedded snapshot retains 61 positive-loss finance-and-insurance records and 11 source fields. Filtering, grouping, and the two exclusions are shown in the code. Adapted data license: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
-
-VERIS Framework. [Victim demographics](https://verisframework.org/victim-demo.html) and [Impact assessment](https://verisframework.org/impact.html). These pages define the size and monetary-loss fields.
-
-JPMorgan Chase & Co. (2015). *2014 Annual Report*, p. 142. [Cybersecurity spending and incident discussion](https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/JPMC-AR2014-MDA.pdf). Used to check the excluded budget amount.
-
-U.S. Department of Health and Human Services. *Cignet Health Fined a $4.3M Civil Money Penalty for HIPAA Privacy Rule Violations*. [Case description](https://www.hhs.gov/hipaa/for-professionals/compliance-enforcement/examples/cignet-health/index.html). Used to check why that fine does not measure the loss from the disclosed-data event.
-
+- [AI-use record](ai-use.qmd)
+- [GitHub repository](https://github.com/EmilianoSantacruz/stat330-cyber-losses)
